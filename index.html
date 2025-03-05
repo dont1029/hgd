@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+        }
+        #status {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #log {
+            width: 80%;
+            height: 300px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #2e2e2e;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #start-btn {
+            background-color: #3B82F6;
+            color: white;
+        }
+        #stop-btn {
+            background-color: #EF4444;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">Click to start listening</div>
+    <button id="start-btn">🎤 Start Listening</button>
+    <button id="stop-btn">⏹️ Stop Listening</button>
+    <div id="log"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        let recognition;
+
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                statusDiv.textContent = "Listening...";
+            };
+
+            recognition.onresult = (event) => {
+                const command = event.results[event.results.length - 1][0].transcript;
+                logDiv.innerHTML += `<div><strong>You:</strong> ${command}</div>`;
+                processCommand(command);
+            };
+
+            recognition.onerror = (event) => {
+                statusDiv.textContent = "Error!";
+                logDiv.innerHTML += `<div><strong>Error:</strong> ${event.error}</div>`;
+            };
+
+            recognition.onend = () => {
+                statusDiv.textContent = "Stopped Listening";
+            };
+        } else {
+            alert("Your browser does not support speech recognition.");
+        }
+
+        startBtn.addEventListener('click', () => {
+            recognition.start();
+        });
+
+        stopBtn.addEventListener('click', () => {
+            recognition.stop();
+        });
+
+        async function processCommand(command) {
+            const response = await fetch('/process_command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ command }),
+            });
+            const data = await response.json();
+            logDiv.innerHTML += `<div><strong>Assistant:</strong> ${data.response}</div>`;
+        }
+    </script>
+</body>
+</html>
